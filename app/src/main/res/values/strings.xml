@@ -27,6 +27,7 @@
 	<!-- MainScreen and dialogs -->
 	<string name="permission_rationale_read_phone_state">The phone calls permission is required to prevent Voice Notify from speaking during a call.</string>
 	<string name="permission_rationale_post_notifications">The post notifications permission is required for Voice Notify to post a test notification.</string>
+	<string name="permission_rationale_read_calendar">The Read Calendar permission is required to check active calendar events and suppress notifications during tagged events.</string>
 	<string name="autostart_message">For Voice Notify to work reliably on this device, it must be allowed to autostart or run in the background.</string>
 	<string name="autostart_message_direct">\n\nPress %s to go to the relevant settings screen and enable Voice Notify if it isn\'t already.</string>
 	<string name="autostart_message_direct_failed">Failed to open the relevant settings screen</string>
@@ -36,6 +37,15 @@
 	<string name="status_summary_notification_access_enabled">Tap to suspend Voice Notify.\nLong press to open the Android notification access settings to disable the service.</string>
 	<string name="status_summary_notification_access_disabled">Tap to open the Android notification access settings to enable the service.</string>
 	<string name="status_summary_suspended">Tap to activate Voice Notify.\nLong press to open the Android notification access settings to disable the service.</string>
+	<string name="status_summary_suspended_timer">Tap to activate Voice Notify (resumes in %d min).\nLong press to open the Android notification access settings to disable the service.</string>
+	<string name="pause_for">Pause for…</string>
+	<string name="pause_15_min">15 minutes</string>
+	<string name="pause_30_min">30 minutes</string>
+	<string name="pause_1_hour">1 hour</string>
+	<string name="pause_2_hours">2 hours</string>
+	<string name="pause_custom">Custom…</string>
+	<string name="pause_indefinitely">Indefinitely</string>
+	<string name="pause_custom_dialog_msg">Enter the number of minutes to pause Voice Notify.</string>
 	<string name="app_list">App List</string>
 	<string name="app_list_summary">Select apps to enable and override settings per app</string>
 	<string name="tts">Text-To-Speech</string>
@@ -73,6 +83,9 @@
 	<string name="device_state_headset_on">Headset On</string>
 	<string name="device_state_silent_vibrate">Silent/Vibrate</string>
 	<string name="device_state_in_call">In Call</string>
+	<string name="calendar_event_tag">Calendar Event Tag</string>
+	<string name="calendar_event_tag_summary_disabled">Disabled — tap to configure</string>
+	<string name="calendar_event_tag_dialog_msg">Enter a tag (e.g. #no-voice-notify). Notifications are suppressed while any active calendar event\'s description contains this tag. Leave empty to disable.</string>
 	<string name="quiet_start">Quiet Time Start</string>
 	<string name="quiet_start_summary">Don\'t speak after this time.\nLeave the same as end to disable.</string>
 	<string name="quiet_end">Quiet Time End</string>
@@ -235,6 +248,7 @@
 	<string name="reason_empty_msg">Empty message</string>
 	<string name="reason_identical">Identical message within {0,choice,-1#infinite seconds|1#{0} second|1&lt;{0} seconds}</string>
 	<string name="reason_quiet">Quiet time</string>
+	<string name="reason_calendar_event">Calendar event</string>
 	<string name="reason_silent">Silent or vibrate mode</string>
 	<string name="reason_call">Active phone call</string>
 	<string name="reason_screen_off">Screen off</string>

@@ -90,7 +90,9 @@ data class Settings(
 	@ColumnInfo(name = "tts_delay")
 	val ttsDelay: Int? = null,
 	@ColumnInfo(name = "tts_repeat")
-	val ttsRepeat: Double? = null
+	val ttsRepeat: Double? = null,
+	@ColumnInfo(name = "calendar_ignore_tag")
+	val calendarIgnoreTag: String? = null
 ) {
 	@Ignore
 	val isGlobal = appPackage == null
@@ -129,7 +131,8 @@ data class Settings(
 			ttsMaxLength = overrides.ttsMaxLength ?: ttsMaxLength,
 			ttsStream = overrides.ttsStream ?: ttsStream,
 			ttsDelay = overrides.ttsDelay ?: ttsDelay,
-			ttsRepeat = overrides.ttsRepeat ?: ttsRepeat
+			ttsRepeat = overrides.ttsRepeat ?: ttsRepeat,
+			calendarIgnoreTag = overrides.calendarIgnoreTag ?: calendarIgnoreTag
 		)
 	}
 

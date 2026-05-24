@@ -52,7 +52,9 @@ import com.pilot51.voicenotify.PermissionHelper.isPermissionGranted
 import com.pilot51.voicenotify.prefs.DataStoreManager.getPrefStateFlow
 import com.pilot51.voicenotify.prefs.DataStoreManager.setPref
 import com.pilot51.voicenotify.prefs.PreferenceHelper.DEFAULT_IS_SUSPENDED
+import com.pilot51.voicenotify.prefs.PreferenceHelper.DEFAULT_SUSPEND_UNTIL
 import com.pilot51.voicenotify.prefs.PreferenceHelper.KEY_IS_SUSPENDED
+import com.pilot51.voicenotify.prefs.PreferenceHelper.KEY_SUSPEND_UNTIL
 import com.pilot51.voicenotify.prefs.db.App
 import com.pilot51.voicenotify.prefs.db.AppDatabase
 import com.pilot51.voicenotify.prefs.db.AppDatabase.Companion.db
@@ -138,6 +140,25 @@ class Service : NotificationListenerService() {
 						}
 					}
 					stop()
+				}
+			}
+		}
+		ioScope.launch {
+			var timerJob: Job? = null
+			suspendUntilFlow.collect { until ->
+				timerJob?.cancel()
+				timerJob = null
+				if (until > 0L) {
+					val remaining = until - System.currentTimeMillis()
+					timerJob = if (remaining <= 0L) {
+						resume()
+						null
+					} else {
+						launch {
+							delay(remaining)
+							if (suspendUntilFlow.value == until) resume()
+						}
+					}
 				}
 			}
 		}
@@ -505,6 +526,10 @@ class Service : NotificationListenerService() {
 		if ((quietStart < quietEnd && quietStart <= calTime && calTime < quietEnd)
 			|| (quietEnd < quietStart && (quietStart <= calTime || calTime < quietEnd))
 		) ignoreReasons.add(IgnoreReason.QUIET)
+		val calTag = settings.calendarIgnoreTag
+		if (!calTag.isNullOrBlank() && CalendarHelper.isTagActiveNow(this, calTag)) {
+			ignoreReasons.add(IgnoreReason.CALENDAR_EVENT)
+		}
 		if ((audioMan.ringerMode == AudioManager.RINGER_MODE_SILENT
 				|| audioMan.ringerMode == AudioManager.RINGER_MODE_VIBRATE)
 			&& !settings.speakSilentOn!!
@@ -723,15 +748,36 @@ class Service : NotificationListenerService() {
 		val isRunning: StateFlow<Boolean> = isInitialized
 		val isSuspendedFlow = getPrefStateFlow(KEY_IS_SUSPENDED, DEFAULT_IS_SUSPENDED)
 		val isSuspended get() = isSuspendedFlow.value
+		val suspendUntilFlow = getPrefStateFlow(KEY_SUSPEND_UNTIL, DEFAULT_SUSPEND_UNTIL)
 
 		private fun getTtsParams(settings: Settings) = Bundle().apply {
 			putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, settings.ttsStream!!)
 		}
 
+		fun suspendFor(durationMinutes: Long) {
+			val until = System.currentTimeMillis() + durationMinutes * 60_000L
+			setPref(KEY_SUSPEND_UNTIL, until)
+			setPref(KEY_IS_SUSPENDED, true)
+		}
+
+		fun suspendIndefinitely() {
+			setPref(KEY_SUSPEND_UNTIL, null)
+			setPref(KEY_IS_SUSPENDED, true)
+		}
+
+		fun resume() {
+			setPref(KEY_SUSPEND_UNTIL, null)
+			setPref(KEY_IS_SUSPENDED, false)
+		}
+
 		fun toggleSuspend(): Boolean {
-			val suspended = isSuspended xor true
-			setPref(KEY_IS_SUSPENDED, suspended)
-			return suspended
+			return if (isSuspended) {
+				resume()
+				false
+			} else {
+				suspendIndefinitely()
+				true
+			}
 		}
 	}
 }

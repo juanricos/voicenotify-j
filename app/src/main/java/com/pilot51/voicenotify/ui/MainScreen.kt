@@ -33,11 +33,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -62,6 +65,8 @@ import com.pilot51.voicenotify.prefs.DataStoreManager.setPref
 import com.pilot51.voicenotify.prefs.PreferenceHelper.KEY_DISABLE_AUTOSTART_MSG
 import com.pilot51.voicenotify.prefs.db.App
 import com.pilot51.voicenotify.ui.dialog.main.BackupDialog
+import com.pilot51.voicenotify.ui.dialog.main.CalendarEventDialog
+import com.pilot51.voicenotify.ui.dialog.main.SuspendTimerDialog
 import com.pilot51.voicenotify.ui.dialog.main.DeviceStatesDialog
 import com.pilot51.voicenotify.ui.dialog.main.IgnoreRepeatsDialog
 import com.pilot51.voicenotify.ui.dialog.main.IgnoreTextDialog
@@ -90,6 +95,8 @@ fun MainScreen(
 	val settingsCombo by vm.configuringSettingsComboState.collectAsState()
 	val phoneStatePermissionState = if (isPreview) null
 		else rememberPermissionState(Manifest.permission.READ_PHONE_STATE)
+	val calendarPermissionState = if (isPreview) null
+		else rememberPermissionState(Manifest.permission.READ_CALENDAR)
 	var statusTitle by remember { mutableStateOf("") }
 	var statusSummary by remember { mutableStateOf("") }
 	val statusIntent = if (isPreview) Intent() else remember { PermissionHelper.notificationListenerSettingsIntent }
@@ -99,9 +106,27 @@ fun MainScreen(
 	}
 	val isRunning by (if (isPreview) MutableStateFlow(false) else Service.isRunning).collectAsState()
 	val isSuspended by (if (isPreview) MutableStateFlow(false) else Service.isSuspendedFlow).collectAsState()
+	val suspendUntil by (if (isPreview) MutableStateFlow(0L) else Service.suspendUntilFlow).collectAsState()
+	var remainingMinutes by remember { mutableIntStateOf(0) }
+	LaunchedEffect(suspendUntil) {
+		if (suspendUntil > 0L) {
+			while (true) {
+				val remaining = ((suspendUntil - System.currentTimeMillis()) / 60_000L).toInt()
+				remainingMinutes = remaining.coerceAtLeast(0)
+				if (remaining <= 0) break
+				delay(30_000L)
+			}
+		} else {
+			remainingMinutes = 0
+		}
+	}
 	if (isSuspended && isRunning) {
 		statusTitle = stringResource(R.string.service_suspended)
-		statusSummary = stringResource(R.string.status_summary_suspended)
+		statusSummary = if (suspendUntil > 0L && remainingMinutes > 0) {
+			stringResource(R.string.status_summary_suspended_timer, remainingMinutes)
+		} else {
+			stringResource(R.string.status_summary_suspended)
+		}
 	} else {
 		statusTitle = stringResource(
 			if (isRunning) R.string.service_running else R.string.service_disabled
@@ -116,6 +141,7 @@ fun MainScreen(
 			}
 		)
 	}
+	var showSuspendTimer by remember { mutableStateOf(false) }
 	var showShakeToSilence by remember { mutableStateOf(false) }
 	var showRequireText by remember { mutableStateOf(false) }
 	var showIgnoreText by remember { mutableStateOf(false) }
@@ -136,6 +162,8 @@ fun MainScreen(
 		mutableStateOf(disableAutostartMsg == false && !isRunning &&
 			autoStartHelper.isAutoStartPermissionAvailable(context))
 	}
+	var showCalendarEventTag by remember { mutableStateOf(false) }
+	var showCalendarRationale by remember { mutableStateOf(false) }
 	var showReadPhoneStateRationale by remember { mutableStateOf(false) }
 	var showPostNotificationRationale by remember { mutableStateOf(false) }
 	val lifeCycleOwner = LocalLifecycleOwner.current
@@ -172,8 +200,11 @@ fun MainScreen(
 				title = statusTitle,
 				summary = statusSummary,
 				onClick = {
-					if (isRunning) Service.toggleSuspend()
-					else context.startActivity(statusIntent)
+					when {
+						!isRunning -> context.startActivity(statusIntent)
+						isSuspended -> Service.resume()
+						else -> showSuspendTimer = true
+					}
 				},
 				onLongClick = { context.startActivity(statusIntent) }
 			)
@@ -309,6 +340,21 @@ fun MainScreen(
 		)
 		if (settings.isGlobal) {
 			PreferenceRowLink(
+				titleRes = R.string.calendar_event_tag,
+				summary = settingsCombo.calendarIgnoreTag
+					?: stringResource(R.string.calendar_event_tag_summary_disabled),
+				onClick = {
+					if (calendarPermissionState!!.requestPermission {
+							showCalendarRationale = true
+						}
+					) {
+						showCalendarEventTag = true
+					}
+				}
+			)
+		}
+		if (settings.isGlobal) {
+			PreferenceRowLink(
 				titleRes = R.string.test,
 				summaryRes = R.string.test_summary,
 				onClick = {
@@ -337,6 +383,9 @@ fun MainScreen(
 				onClick = { showSupport = true }
 			)
 		}
+	}
+	if (showSuspendTimer) {
+		SuspendTimerDialog { showSuspendTimer = false }
 	}
 	if (showShakeToSilence) {
 		ShakeThresholdDialog(vm) { showShakeToSilence = false }
@@ -436,6 +485,15 @@ fun MainScreen(
 				}
 			}
 		)
+	}
+	if (showCalendarEventTag) {
+		CalendarEventDialog(vm) { showCalendarEventTag = false }
+	}
+	if (showCalendarRationale) {
+		RationaleDialog(
+			permissionState = calendarPermissionState!!,
+			rationaleMsgId = R.string.permission_rationale_read_calendar
+		) { showCalendarRationale = false }
 	}
 	if (showReadPhoneStateRationale) {
 		RationaleDialog(

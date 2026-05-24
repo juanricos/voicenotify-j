@@ -23,6 +23,7 @@ enum class IgnoreReason(
 	SERVICE_STOPPED(R.string.reason_service_stopped),
 	SUSPENDED(R.string.reason_suspended),
 	QUIET(R.string.reason_quiet),
+	CALENDAR_EVENT(R.string.reason_calendar_event),
 	SHAKE(R.string.reason_shake),
 	SILENT(R.string.reason_silent),
 	CALL(R.string.reason_call),

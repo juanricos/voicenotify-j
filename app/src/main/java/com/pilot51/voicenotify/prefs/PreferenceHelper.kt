@@ -24,6 +24,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.preference.PreferenceManager
 import com.pilot51.voicenotify.BuildConfig
@@ -65,11 +66,13 @@ object PreferenceHelper {
 
 	// Service
 	val KEY_IS_SUSPENDED = booleanPreferencesKey("isSuspended")
+	val KEY_SUSPEND_UNTIL = longPreferencesKey("suspendUntil")
 
 	// Defaults
 	const val DEFAULT_SHAKE_THRESHOLD = 100
 	const val DEFAULT_APP_DEFAULT_ENABLE = true
 	const val DEFAULT_IS_SUSPENDED = false
+	const val DEFAULT_SUSPEND_UNTIL = 0L
 	private val DEFAULT_LOG_IGNORED = LogIgnoredValue.SHOW
 	private val DEFAULT_LOG_IGNORED_APPS = LogIgnoredValue.SHOW
 
